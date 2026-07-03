@@ -123,7 +123,8 @@ export default function SetupPage() {
               Vercel Blob
             </a>{" "}
             store for this project (Storage tab → Create → Blob), then redeploy.
-            Vercel injects <code>BLOB_READ_WRITE_TOKEN</code> automatically.
+            Vercel links the store via OIDC (<code>BLOB_STORE_ID</code>) or{" "}
+            <code>BLOB_READ_WRITE_TOKEN</code>.
           </p>
         </div>
 

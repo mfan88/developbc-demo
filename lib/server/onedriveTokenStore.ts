@@ -5,7 +5,14 @@ import { del, get, put } from "@vercel/blob";
 const BLOB_PATHNAME = "onedrive/token-cache.json";
 
 export function usesBlobTokenStore() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  // OIDC-linked stores inject BLOB_STORE_ID; older setups use BLOB_READ_WRITE_TOKEN.
+  return Boolean(process.env.BLOB_STORE_ID || process.env.BLOB_READ_WRITE_TOKEN);
+}
+
+export function getBlobAuthMode(): "oidc" | "token" | "none" {
+  if (process.env.BLOB_STORE_ID) return "oidc";
+  if (process.env.BLOB_READ_WRITE_TOKEN) return "token";
+  return "none";
 }
 
 export function getFileTokenCachePath() {
@@ -82,11 +89,15 @@ export async function deleteTokenCache() {
 }
 
 export function getTokenStorageDescription() {
-  if (usesBlobTokenStore()) {
+  const authMode = getBlobAuthMode();
+  if (authMode === "oidc") {
+    return "Vercel Blob (OIDC)";
+  }
+  if (authMode === "token") {
     return "Vercel Blob";
   }
   if (process.env.VERCEL) {
-    return "unconfigured (Blob store required on Vercel)";
+    return "unconfigured (connect Blob store to this project and redeploy)";
   }
   return "local file";
 }

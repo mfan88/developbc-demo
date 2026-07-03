@@ -4,7 +4,7 @@ import {
   clearOneDriveConnection,
   getOneDriveConnectionStatus,
 } from "@/lib/server/onedriveAuth";
-import { getTokenStorageDescription } from "@/lib/server/onedriveTokenStore";
+import { getTokenStorageDescription, getBlobAuthMode, usesBlobTokenStore } from "@/lib/server/onedriveTokenStore";
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,6 +16,8 @@ export default async function handler(
       ...status,
       redirectUri: getOneDriveRedirectUri(req),
       tokenStorage: getTokenStorageDescription(),
+      blobConfigured: usesBlobTokenStore(),
+      blobAuth: getBlobAuthMode(),
     });
   }
 
