@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2Icon } from "lucide-react";
 import { type OneDriveUploadResult } from "@/lib/graphUpload";
-import { uploadFileToOneDrive } from "@/lib/client/onedriveUpload";
+import { getLiveUploadPercent, uploadFileToOneDrive } from "@/lib/client/onedriveUpload";
 import {
   ACCEPTED_UPLOAD_TYPES,
   formatMaxUploadSize,
@@ -30,6 +30,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { PHYSIO_OPTIONS } from "@/lib/uploadFolders";
+import { Progress } from "@/components/ui/progress";
 
 const montTitle = Montserrat({
   weight: "600",
@@ -51,23 +52,19 @@ export default function Home() {
     null,
   );
   const [isUploading, setIsUploading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const runUpload = useCallback(async (file: File, folder: string) => {
     setUploadError(null);
     setUploadResult(null);
     setIsUploading(true);
-    setStatusMessage("Uploading...");
     if (!folder) return;
 
     try {
-      const result = await uploadFileToOneDrive(file, folder, setStatusMessage);
+      const result = await uploadFileToOneDrive(file, folder);
       setUploadResult(result);
-      setStatusMessage(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
       setUploadError(message);
-      setStatusMessage(null);
       console.error("OneDrive upload failed:", error);
     } finally {
       setIsUploading(false);
@@ -85,7 +82,6 @@ export default function Home() {
 
       setUploadError(null);
       setUploadResult(null);
-      setStatusMessage(null);
       setFiles({ file: newFile, previewUrl: URL.createObjectURL(newFile) });
     },
     onDropRejected: (rejections) => {
@@ -143,7 +139,7 @@ export default function Home() {
             <CardContent>
               <CardTitle className="m-0">
                 {uploadResult
-                  ? `File Uploaded Folder:${selectedPhysio}`
+                  ? `File Uploaded \nSending to Physio: ${selectedPhysio}`
                   : "File Selected"}
               </CardTitle>
               <CardDescription className="m-0">
@@ -157,10 +153,11 @@ export default function Home() {
           No sign-in needed. Files are sent to the clinic OneDrive account.
         </p>
 
-        {statusMessage && (
-          <p className={`text-sm text-black ${mont.className}`}>
-            {statusMessage}
-          </p>
+        {getLiveUploadPercent() > 0 && (
+          <Progress
+            value={getLiveUploadPercent()}
+            className="w-full h-2"
+          />
         )}
 
         {uploadError && (

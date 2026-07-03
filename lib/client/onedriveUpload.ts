@@ -9,10 +9,35 @@ import {
 
 type UploadSessionResponse = OneDriveUploadSession;
 
+let liveUploadPercent = 0;
+
+export function getUploadPercent(
+  bytesUploaded: number,
+  totalBytes: number,
+): number {
+  if (
+    !Number.isFinite(bytesUploaded) ||
+    !Number.isFinite(totalBytes) ||
+    totalBytes <= 0
+  ) {
+    return 0;
+  }
+
+  const percent = Math.round((bytesUploaded / totalBytes) * 100);
+  return Math.min(100, Math.max(0, percent));
+}
+
+export function getLiveUploadPercent(): number {
+  return liveUploadPercent;
+}
+
+function setLiveUploadPercent(percent: number) {
+  liveUploadPercent = Math.min(100, Math.max(0, Math.round(percent)));
+}
+
 async function uploadViaSession(
   file: File,
   uploadUrl: string,
-  onProgress?: (percent: number) => void,
 ): Promise<OneDriveUploadResult> {
   let start = 0;
 
@@ -31,12 +56,12 @@ async function uploadViaSession(
 
     if (response.status === 202) {
       start = end + 1;
-      onProgress?.(Math.round((start / file.size) * 100));
+      setLiveUploadPercent(getUploadPercent(start, file.size));
       continue;
     }
 
     if (response.status === 201 || response.status === 200) {
-      onProgress?.(100);
+      setLiveUploadPercent(getUploadPercent(file.size, file.size));
       return (await response.json()) as OneDriveUploadResult;
     }
 
@@ -78,38 +103,42 @@ async function uploadViaApiRoute(
 export async function uploadFileToOneDrive(
   file: File,
   folder: string,
-  onProgress?: (message: string) => void,
 ): Promise<OneDriveUploadResult> {
-  if (file.size <= MAX_SIMPLE_UPLOAD_BYTES) {
-    onProgress?.("Uploading...");
-    return uploadViaApiRoute(file, folder);
+  setLiveUploadPercent(0);
+
+  try {
+    if (file.size <= MAX_SIMPLE_UPLOAD_BYTES) {
+      const result = await uploadViaApiRoute(file, folder);
+      setLiveUploadPercent(100);
+      return result;
+    }
+
+    const sessionResponse = await fetch("/api/upload/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        filename: file.name,
+        folder,
+        fileSize: file.size,
+      }),
+    });
+
+    const sessionPayload = (await sessionResponse.json()) as
+      | UploadSessionResponse
+      | { error?: string };
+
+    if (!sessionResponse.ok) {
+      throw new Error(
+        "error" in sessionPayload && sessionPayload.error
+          ? sessionPayload.error
+          : "Could not start upload session",
+      );
+    }
+
+    const session = sessionPayload as UploadSessionResponse;
+    return uploadViaSession(file, session.uploadUrl);
+  } catch (error) {
+    setLiveUploadPercent(0);
+    throw error;
   }
-
-  onProgress?.("Starting large file upload...");
-  const sessionResponse = await fetch("/api/upload/session", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      filename: file.name,
-      folder,
-      fileSize: file.size,
-    }),
-  });
-
-  const sessionPayload = (await sessionResponse.json()) as
-    | UploadSessionResponse
-    | { error?: string };
-
-  if (!sessionResponse.ok) {
-    throw new Error(
-      "error" in sessionPayload && sessionPayload.error
-        ? sessionPayload.error
-        : "Could not start upload session",
-    );
-  }
-
-  const session = sessionPayload as UploadSessionResponse;
-  return uploadViaSession(file, session.uploadUrl, (percent) => {
-    onProgress?.(`Uploading... ${percent}%`);
-  });
 }

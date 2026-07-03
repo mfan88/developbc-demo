@@ -108,63 +108,6 @@ export default function SetupPage() {
             {isDisconnecting ? "Disconnecting..." : "Disconnect"}
           </Button>
         </div>
-
-        <div className="rounded-md border p-4 text-sm">
-          <p className="font-medium">Vercel production</p>
-          <p className="mt-2">
-            Vercel cannot write to the project filesystem. Before connecting on
-            production, create a{" "}
-            <a
-              href="https://vercel.com/docs/vercel-blob"
-              className="underline"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Vercel Blob
-            </a>{" "}
-            store for this project (Storage tab → Create → Blob), then redeploy.
-            Vercel links the store via OIDC (<code>BLOB_STORE_ID</code>) or{" "}
-            <code>BLOB_READ_WRITE_TOKEN</code>.
-          </p>
-        </div>
-
-        <div className="rounded-md border p-4 text-sm">
-          <p className="font-medium">Option A — Browser connect (redirect URI)</p>
-          <ol className="mt-2 list-decimal space-y-2 pl-5">
-            <li>
-              Azure Portal → App registrations → your app → Authentication
-            </li>
-            <li>
-              Under <strong>Mobile and desktop applications</strong>, add this
-              redirect URI (not under Single-page application):
-            </li>
-          </ol>
-          <code className="mt-2 block break-all rounded bg-muted p-2">
-            {status?.redirectUri ??
-              "http://localhost:3000/api/auth/onedrive/callback"}
-          </code>
-          <p className="mt-2">
-            If the same URI is listed under Single-page application, remove it
-            from there.
-          </p>
-          <p className="mt-2">
-            Set <strong>Allow public client flows</strong> to Yes, save, wait ~1
-            minute, then click Connect again.
-          </p>
-        </div>
-
-        <div className="rounded-md border p-4 text-sm">
-          <p className="font-medium">Option B — CLI (recommended for local dev)</p>
-          <p className="mt-2">
-            Device code flow avoids redirect URI platform issues. From the
-            project root:
-          </p>
-          <code className="mt-2 block rounded bg-muted p-2">npm run onedrive:connect</code>
-          <p className="mt-2 text-muted-foreground">
-            Sign in with the receiving Outlook account when prompted, then
-            refresh this page.
-          </p>
-        </div>
       </div>
     </main>
   );

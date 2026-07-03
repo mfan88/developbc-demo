@@ -8,5 +8,5 @@ export const ACCEPTED_UPLOAD_TYPES = {
 } as const;
 
 export function formatMaxUploadSize() {
-  return "100 MB";
+  return "4 GB";
 }
