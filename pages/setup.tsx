@@ -102,8 +102,7 @@ export default function SetupPage() {
           </Button>
 
           <Button
-            variant="outline"
-            className="text-white"
+            variant="default"
             disabled={!status?.connected || isDisconnecting}
             onClick={() => {
               setIsDisconnecting(true);
@@ -126,8 +125,7 @@ export default function SetupPage() {
           </p>
 
           <Button
-            variant="outline"
-            className="text-white"
+            variant="default"
             disabled={isGeneratingLink}
             onClick={() => {
               setLinkError(null);
