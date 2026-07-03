@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2Icon } from "lucide-react";
 import { type OneDriveUploadResult } from "@/lib/graphUpload";
-import { getLiveUploadPercent, uploadFileToOneDrive } from "@/lib/client/onedriveUpload";
+import { uploadFileToOneDrive } from "@/lib/client/onedriveUpload";
+import { useLiveUploadPercent } from "@/lib/client/useLiveUploadPercent";
 import {
   ACCEPTED_UPLOAD_TYPES,
   formatMaxUploadSize,
@@ -52,6 +53,7 @@ export default function Home() {
     null,
   );
   const [isUploading, setIsUploading] = useState(false);
+  const uploadPercent = useLiveUploadPercent();
 
   const runUpload = useCallback(async (file: File, folder: string) => {
     setUploadError(null);
@@ -153,10 +155,11 @@ export default function Home() {
           No sign-in needed. Files are sent to the clinic OneDrive account.
         </p>
 
-        {getLiveUploadPercent() > 0 && (
+        {isUploading && (
           <Progress
-            value={getLiveUploadPercent()}
-            className="w-full h-2"
+            value={uploadPercent}
+            color="black"
+            className="w-60 h-2 text-black"
           />
         )}
 

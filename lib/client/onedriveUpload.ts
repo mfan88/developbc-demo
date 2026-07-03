@@ -10,6 +10,7 @@ import {
 type UploadSessionResponse = OneDriveUploadSession;
 
 let liveUploadPercent = 0;
+const uploadPercentListeners = new Set<(percent: number) => void>();
 
 export function getUploadPercent(
   bytesUploaded: number,
@@ -31,8 +32,21 @@ export function getLiveUploadPercent(): number {
   return liveUploadPercent;
 }
 
+export function subscribeToLiveUploadPercent(
+  listener: (percent: number) => void,
+): () => void {
+  uploadPercentListeners.add(listener);
+  listener(liveUploadPercent);
+  return () => {
+    uploadPercentListeners.delete(listener);
+  };
+}
+
 function setLiveUploadPercent(percent: number) {
   liveUploadPercent = Math.min(100, Math.max(0, Math.round(percent)));
+  for (const listener of uploadPercentListeners) {
+    listener(liveUploadPercent);
+  }
 }
 
 async function uploadViaSession(
