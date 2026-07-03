@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 const mont = Montserrat({ weight: "400" });
 
@@ -41,6 +42,15 @@ export default function SetupPage() {
   const isSpaRedemptionError =
     error?.includes("AADSTS90023") ||
     error?.includes("Single-Page Application");
+
+    async function copyLink(url: string): Promise<void> {
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard");
+      } catch (err) {
+        toast.error("Failed to copy link");
+      }
+    }
 
   return (
     <main className={`min-h-screen bg-white p-8 text-black ${mont.className}`}>
@@ -158,9 +168,9 @@ export default function SetupPage() {
             <Alert>
               <AlertTitle>Share this link with a parent</AlertTitle>
               <AlertDescription className="break-all">
-                <a href={generatedLink.url} className="underline">
+                <Button onClick={() => void copyLink(generatedLink.url)} className="underline">
                   {generatedLink.url}
-                </a>
+                </Button>
               </AlertDescription>
             </Alert>
           )}
