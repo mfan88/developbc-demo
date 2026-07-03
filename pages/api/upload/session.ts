@@ -5,6 +5,7 @@ import {
   sanitizeUploadFilename,
 } from "@/lib/graphUpload";
 import { getOneDriveAccessToken } from "@/lib/server/onedriveAuth";
+import { assertUploadPortalAccess } from "@/lib/server/uploadAccess";
 import { resolveUploadFolder } from "@/lib/uploadFolders";
 
 export default async function handler(
@@ -14,6 +15,10 @@ export default async function handler(
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!(await assertUploadPortalAccess(req, res))) {
+    return;
   }
 
   try {

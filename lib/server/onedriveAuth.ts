@@ -8,6 +8,7 @@ import {
 } from "@azure/msal-node";
 import {
   getOneDriveRedirectUri,
+  getUploadAccessRedirectUri,
   graphScopes,
   msalAuthority,
   msalClientId,
@@ -68,6 +69,36 @@ async function getStoredAccounts(): Promise<AccountInfo[]> {
 export async function getConnectedOneDriveAccount(): Promise<AccountInfo | null> {
   const accounts = await getStoredAccounts();
   return accounts[0] ?? null;
+}
+
+export function oneDriveAccountsMatch(
+  signedIn: AccountInfo,
+  connected: AccountInfo,
+) {
+  if (
+    signedIn.homeAccountId &&
+    connected.homeAccountId &&
+    signedIn.homeAccountId === connected.homeAccountId
+  ) {
+    return true;
+  }
+
+  if (
+    signedIn.localAccountId &&
+    connected.localAccountId &&
+    signedIn.localAccountId === connected.localAccountId
+  ) {
+    return true;
+  }
+
+  const signedInUsername = signedIn.username?.trim().toLowerCase();
+  const connectedUsername = connected.username?.trim().toLowerCase();
+
+  return Boolean(
+    signedInUsername &&
+      connectedUsername &&
+      signedInUsername === connectedUsername,
+  );
 }
 
 export async function getOneDriveConnectionStatus() {
@@ -149,4 +180,63 @@ export async function getOneDriveAccessToken() {
 export async function clearOneDriveConnection() {
   await deleteTokenCache();
   pca = null;
+}
+
+export async function getUploadAccessLoginUrl(
+  codeChallenge: string,
+  req?: {
+    headers: {
+      host?: string;
+      "x-forwarded-proto"?: string | string[];
+    };
+  },
+  loginHint?: string,
+) {
+  ensureClientId();
+  const client = new PublicClientApplication({
+    auth: {
+      clientId: msalClientId,
+      authority: msalAuthority,
+    },
+  });
+
+  const request: AuthorizationUrlRequest = {
+    scopes: [...graphScopes],
+    redirectUri: getUploadAccessRedirectUri(req),
+    prompt: "select_account",
+    codeChallenge,
+    codeChallengeMethod: "S256",
+    ...(loginHint ? { loginHint } : {}),
+  };
+
+  return client.getAuthCodeUrl(request);
+}
+
+export async function verifyUploadAccessIdentity(
+  code: string,
+  codeVerifier: string,
+  req?: {
+    headers: {
+      host?: string;
+      "x-forwarded-proto"?: string | string[];
+    };
+  },
+) {
+  ensureClientId();
+  const client = new PublicClientApplication({
+    auth: {
+      clientId: msalClientId,
+      authority: msalAuthority,
+    },
+  });
+
+  const request: AuthorizationCodeRequest = {
+    code,
+    codeVerifier,
+    scopes: [...graphScopes],
+    redirectUri: getUploadAccessRedirectUri(req),
+  };
+
+  const result = await client.acquireTokenByCode(request);
+  return result.account ?? null;
 }

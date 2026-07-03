@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getOneDriveLoginUrl } from "@/lib/server/onedriveAuth";
+import {
+  getConnectedOneDriveAccount,
+  getUploadAccessLoginUrl,
+} from "@/lib/server/onedriveAuth";
 import { createPkcePair, authFlowCookieHeader, pkceCookieHeader } from "@/lib/server/pkce";
 
 export default async function handler(
@@ -12,12 +15,17 @@ export default async function handler(
   }
 
   try {
+    const connectedAccount = await getConnectedOneDriveAccount();
     const { verifier, challenge } = createPkcePair();
     res.setHeader("Set-Cookie", [
       pkceCookieHeader(verifier),
-      authFlowCookieHeader("setup"),
+      authFlowCookieHeader("upload-access"),
     ]);
-    const loginUrl = await getOneDriveLoginUrl(challenge, req);
+    const loginUrl = await getUploadAccessLoginUrl(
+      challenge,
+      req,
+      connectedAccount?.username ?? undefined,
+    );
     res.redirect(307, loginUrl);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Login failed";

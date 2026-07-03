@@ -3,6 +3,7 @@ import formidable from "formidable";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { uploadSmallFileToOneDrive } from "@/lib/graphUpload";
 import { getOneDriveAccessToken } from "@/lib/server/onedriveAuth";
+import { assertUploadPortalAccess } from "@/lib/server/uploadAccess";
 import { MAX_SIMPLE_UPLOAD_BYTES } from "@/lib/uploadLimits";
 import { resolveUploadFolder } from "@/lib/uploadFolders";
 
@@ -56,6 +57,10 @@ export default async function handler(
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  if (!(await assertUploadPortalAccess(req, res))) {
+    return;
   }
 
   let tempFilePath: string | null = null;

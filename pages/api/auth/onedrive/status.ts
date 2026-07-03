@@ -1,10 +1,11 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getOneDriveRedirectUri } from "@/lib/server/msalConfig";
+import { getOneDriveRedirectUri, getRegisteredRedirectUris, getUploadAccessRedirectUri } from "@/lib/server/msalConfig";
 import {
   clearOneDriveConnection,
   getOneDriveConnectionStatus,
 } from "@/lib/server/onedriveAuth";
 import { getTokenStorageDescription, getBlobAuthMode, usesBlobTokenStore } from "@/lib/server/onedriveTokenStore";
+import { clearUploadAccessCookieHeader } from "@/lib/server/uploadAccess";
 
 export default async function handler(
   req: NextApiRequest,
@@ -15,6 +16,8 @@ export default async function handler(
     return res.status(200).json({
       ...status,
       redirectUri: getOneDriveRedirectUri(req),
+      uploadAccessRedirectUri: getUploadAccessRedirectUri(req),
+      redirectUris: getRegisteredRedirectUris(),
       tokenStorage: getTokenStorageDescription(),
       blobConfigured: usesBlobTokenStore(),
       blobAuth: getBlobAuthMode(),
@@ -23,6 +26,7 @@ export default async function handler(
 
   if (req.method === "DELETE") {
     await clearOneDriveConnection();
+    res.setHeader("Set-Cookie", clearUploadAccessCookieHeader());
     return res.status(200).json({ connected: false });
   }
 

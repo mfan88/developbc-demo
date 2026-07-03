@@ -14,10 +14,18 @@ type ConnectionStatus = {
   tokenStorage?: string;
 };
 
+type GeneratedLink = {
+  url: string;
+  expiresInSeconds: number;
+};
+
 export default function SetupPage() {
   const router = useRouter();
   const [status, setStatus] = useState<ConnectionStatus | null>(null);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<GeneratedLink | null>(null);
+  const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     void fetch("/api/auth/onedrive/status")
@@ -108,6 +116,62 @@ export default function SetupPage() {
             {isDisconnecting ? "Disconnecting..." : "Disconnect"}
           </Button>
         </div>
+
+        <section className="flex flex-col gap-3 border-t border-black/10 pt-6">
+          <h2 className="text-xl font-semibold">Parent upload link</h2>
+          <p className="text-sm">
+            Generate a one-time link for parents. It expires after 24 hours and
+            redirects to the upload portal.
+          </p>
+
+          <Button
+            variant="outline"
+            disabled={isGeneratingLink}
+            onClick={() => {
+              setLinkError(null);
+              setGeneratedLink(null);
+              setIsGeneratingLink(true);
+              void fetch("/api/generate-link", { method: "POST" })
+                .then(async (res) => {
+                  const data = (await res.json()) as GeneratedLink & {
+                    error?: string;
+                  };
+                  if (!res.ok) {
+                    throw new Error(data.error ?? "Could not generate link");
+                  }
+                  setGeneratedLink(data);
+                })
+                .catch((error: unknown) => {
+                  const message =
+                    error instanceof Error
+                      ? error.message
+                      : "Could not generate link";
+                  setLinkError(message);
+                })
+                .finally(() => setIsGeneratingLink(false));
+            }}
+          >
+            {isGeneratingLink ? "Generating..." : "Generate parent link"}
+          </Button>
+
+          {generatedLink && (
+            <Alert>
+              <AlertTitle>Share this link with a parent</AlertTitle>
+              <AlertDescription className="break-all">
+                <a href={generatedLink.url} className="underline">
+                  {generatedLink.url}
+                </a>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {linkError && (
+            <Alert variant="destructive">
+              <AlertTitle>Link generation failed</AlertTitle>
+              <AlertDescription>{linkError}</AlertDescription>
+            </Alert>
+          )}
+        </section>
       </div>
     </main>
   );

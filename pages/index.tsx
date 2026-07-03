@@ -2,8 +2,10 @@ import ddaLogo from "@/assets/dda-logo.svg";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
 import Link from "next/link";
+import type { GetServerSideProps } from "next";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { canAccessUploadPortal } from "@/lib/server/uploadAccess";
 import {
   Select,
   SelectContent,
@@ -40,6 +42,21 @@ const montTitle = Montserrat({
 const mont = Montserrat({
   weight: "400",
 });
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const access = await canAccessUploadPortal(context.req);
+
+  if (!access.allowed) {
+    return {
+      redirect: {
+        destination: access.loginUrl,
+        permanent: false,
+      },
+    };
+  }
+
+  return { props: {} };
+};
 
 export default function Home() {
   const [files, setFiles] = useState<{ file: File; previewUrl: string } | null>(

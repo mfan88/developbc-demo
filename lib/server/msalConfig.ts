@@ -24,12 +24,20 @@ export function getAppOrigin() {
   return (configured ?? "http://localhost:3000").replace(/\/$/, "");
 }
 
-export function getOneDriveRedirectUri(req?: {
+function resolveRedirectUri(path: string, req?: {
   headers: {
     host?: string;
     "x-forwarded-proto"?: string | string[];
   };
 }) {
+  if (process.env.ONEDRIVE_REDIRECT_URI) {
+    return process.env.ONEDRIVE_REDIRECT_URI.replace(/\/$/, "");
+  }
+
+  if (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL) {
+    return `${getAppOrigin()}${path}`;
+  }
+
   if (req?.headers.host) {
     const protocol =
       typeof req.headers["x-forwarded-proto"] === "string"
@@ -37,8 +45,38 @@ export function getOneDriveRedirectUri(req?: {
         : req.headers.host.includes("localhost")
           ? "http"
           : "https";
-    return `${protocol}://${req.headers.host}/api/auth/onedrive/callback`;
+    return `${protocol}://${req.headers.host}${path}`;
   }
 
-  return `${getAppOrigin()}/api/auth/onedrive/callback`;
+  return `${getAppOrigin()}${path}`;
+}
+
+export function getOneDriveRedirectUri(req?: {
+  headers: {
+    host?: string;
+    "x-forwarded-proto"?: string | string[];
+  };
+}) {
+  return resolveRedirectUri("/api/auth/onedrive/callback", req);
+}
+
+export function getUploadAccessRedirectUri(req?: {
+  headers: {
+    host?: string;
+    "x-forwarded-proto"?: string | string[];
+  };
+}) {
+  return resolveRedirectUri("/api/auth/upload-access/callback", req);
+}
+
+export function getRegisteredRedirectUris() {
+  if (process.env.ONEDRIVE_REDIRECT_URI) {
+    return [process.env.ONEDRIVE_REDIRECT_URI.replace(/\/$/, "")];
+  }
+
+  const origin = getAppOrigin();
+  return [
+    `${origin}/api/auth/onedrive/callback`,
+    `${origin}/api/auth/upload-access/callback`,
+  ];
 }
