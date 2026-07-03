@@ -1,78 +1,204 @@
+import ddaLogo from "@/assets/dda-logo.svg";
 import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Montserrat } from "next/font/google";
+import Link from "next/link";
+import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { CheckCircle2Icon } from "lucide-react";
+import { type OneDriveUploadResult } from "@/lib/graphUpload";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardTitle,
+} from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "sonner";
+import { PHYSIO_OPTIONS } from "@/lib/uploadFolders";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const montTitle = Montserrat({
+  weight: "600",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const mont = Montserrat({
+  weight: "400",
 });
 
 export default function Home() {
+  const [files, setFiles] = useState<{ file: File; previewUrl: string } | null>(
+    null,
+  );
+  const [selectedPhysio, setSelectedPhysio] = useState<string | undefined>(
+    undefined,
+  );
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadResult, setUploadResult] = useState<OneDriveUploadResult | null>(
+    null,
+  );
+  const [isUploading, setIsUploading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+
+  const runUpload = useCallback(async (file: File, folder: string) => {
+    setUploadError(null);
+    setUploadResult(null);
+    setIsUploading(true);
+    setStatusMessage("Uploading...");
+    if (!folder) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", folder);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const payload = (await response.json()) as
+        | OneDriveUploadResult
+        | { error?: string };
+
+      if (!response.ok) {
+        throw new Error(
+          "error" in payload && payload.error ? payload.error : "Upload failed",
+        );
+      }
+
+      setUploadResult(payload as OneDriveUploadResult);
+      setStatusMessage(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed";
+      setUploadError(message);
+      setStatusMessage(null);
+      console.error("OneDrive upload failed:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    accept: { "image/*": [] },
+    multiple: false,
+    maxFiles: 1,
+    onDrop: (acceptedFile) => {
+      const [newFile] = acceptedFile;
+      if (!newFile) return;
+
+      setUploadError(null);
+      setUploadResult(null);
+      setStatusMessage(null);
+      setFiles({ file: newFile, previewUrl: URL.createObjectURL(newFile) });
+    },
+  });
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
-    >
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the index.tsx file.
+    <div className="min-h-screen min-w-screen bg-white">
+      <header className="box-border p-2 justify-left">
+        <Image className="w-60" src={ddaLogo} alt="ddalogo" />
+      </header>
+
+      <div className="flex flex-col items-center gap-8 mt-5">
+        <div className="flex w-full justify-center items-center">
+          <h1 className={`text-6xl text-black ${montTitle.className}`}>
+            PARENT UPLOAD PORTAL
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+        </div>
+        <div>
+          <Select value={selectedPhysio} onValueChange={setSelectedPhysio}>
+            <SelectTrigger className="w-60 max-w-60 text-black">
+              <SelectValue placeholder="Select your physio"></SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {PHYSIO_OPTIONS.map((physio) => (
+                <SelectItem key={physio.value} value={physio.value}>
+                  {physio.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div
+          {...getRootProps()}
+          className={`w-120 min-w-30 max-w-120 h-60 min-h-15 max-h-60 flex flex-col text-black ${mont.className} justify-center items-center border border-dashed border-black rounded-md ${isDragActive ? "dragging" : ""}`}
+        >
+          <input {...getInputProps()} />
+          <p className={`text-xl`}>Drag & drop files here!</p>
+          <p className={`text-sm`}>or click to select files</p>
+        </div>
+
+        {files?.file && (
+          <Card className="h-[8%] w-[25%] border border-black gap-1 px-2 py-1 flex flex-row">
+            <div className="flex justify-center items-center">
+              {isUploading ? <Spinner /> : <CheckCircle2Icon color="green" />}
+            </div>
+            <CardContent>
+              <CardTitle className="m-0">
+                {uploadResult
+                  ? `File Uploaded Folder:${selectedPhysio}`
+                  : "File Selected"}
+              </CardTitle>
+              <CardDescription className="m-0">
+                {files.file.name}
+              </CardDescription>
+            </CardContent>
+          </Card>
+        )}
+
+        <p className={`text-sm text-black ${mont.className}`}>
+          No sign-in needed. Files are sent to the clinic OneDrive account.
+        </p>
+
+        {statusMessage && (
+          <p className={`text-sm text-black ${mont.className}`}>
+            {statusMessage}
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs/pages/getting-started?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        )}
+
+        {uploadError && (
+          <Alert variant="destructive">
+            <AlertTitle>Upload failed</AlertTitle>
+            <AlertDescription>
+              {uploadError}
+              {uploadError.includes("/setup") ? null : (
+                <>
+                  {" "}
+                  If this is the first time, an admin may need to connect
+                  OneDrive at{" "}
+                  <Link href="/setup" className="underline">
+                    /setup
+                  </Link>
+                  .
+                </>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Button
+          variant="ghost"
+          className={`border border-black text-black hover:text-black text-xl ${mont.className}`}
+          size="lg"
+          disabled={!files?.file || !selectedPhysio || isUploading}
+          onClick={() => {
+            if (!files?.file || !selectedPhysio) {
+              toast.error("Select your physio before uploading.");
+              return;
+            }
+            void runUpload(files.file, selectedPhysio);
+          }}
+        >
+          {isUploading ? "Uploading..." : "Send"}
+        </Button>
+      </div>
     </div>
   );
 }
