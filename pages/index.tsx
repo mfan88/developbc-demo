@@ -15,6 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle2Icon } from "lucide-react";
 import { type OneDriveUploadResult } from "@/lib/graphUpload";
+import { uploadFileToOneDrive } from "@/lib/client/onedriveUpload";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  formatMaxUploadSize,
+  MAX_UPLOAD_BYTES,
+} from "@/lib/uploadLimits";
 import {
   Card,
   CardContent,
@@ -55,26 +61,8 @@ export default function Home() {
     if (!folder) return;
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", folder);
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const payload = (await response.json()) as
-        | OneDriveUploadResult
-        | { error?: string };
-
-      if (!response.ok) {
-        throw new Error(
-          "error" in payload && payload.error ? payload.error : "Upload failed",
-        );
-      }
-
-      setUploadResult(payload as OneDriveUploadResult);
+      const result = await uploadFileToOneDrive(file, folder, setStatusMessage);
+      setUploadResult(result);
       setStatusMessage(null);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
@@ -87,9 +75,10 @@ export default function Home() {
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: { "image/*": [] },
+    accept: ACCEPTED_UPLOAD_TYPES,
     multiple: false,
     maxFiles: 1,
+    maxSize: MAX_UPLOAD_BYTES,
     onDrop: (acceptedFile) => {
       const [newFile] = acceptedFile;
       if (!newFile) return;
@@ -98,6 +87,17 @@ export default function Home() {
       setUploadResult(null);
       setStatusMessage(null);
       setFiles({ file: newFile, previewUrl: URL.createObjectURL(newFile) });
+    },
+    onDropRejected: (rejections) => {
+      const rejection = rejections[0];
+      const tooLarge = rejection?.errors.some(
+        (error) => error.code === "file-too-large",
+      );
+      setUploadError(
+        tooLarge
+          ? `Files must be ${formatMaxUploadSize()} or smaller.`
+          : "Only image and video files are supported.",
+      );
     },
   });
   return (
@@ -131,8 +131,8 @@ export default function Home() {
           className={`w-120 min-w-30 max-w-120 h-60 min-h-15 max-h-60 flex flex-col text-black ${mont.className} justify-center items-center border border-dashed border-black rounded-md ${isDragActive ? "dragging" : ""}`}
         >
           <input {...getInputProps()} />
-          <p className={`text-xl`}>Drag & drop files here!</p>
-          <p className={`text-sm`}>or click to select files</p>
+          <p className={`text-xl`}>Drag & drop photos or videos here!</p>
+          <p className={`text-sm`}>or click to select files (up to {formatMaxUploadSize()})</p>
         </div>
 
         {files?.file && (

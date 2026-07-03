@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import formidable from "formidable";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { uploadToOneDrive } from "@/lib/graphUpload";
+import { uploadSmallFileToOneDrive } from "@/lib/graphUpload";
 import { getOneDriveAccessToken } from "@/lib/server/onedriveAuth";
+import { MAX_SIMPLE_UPLOAD_BYTES } from "@/lib/uploadLimits";
 import { resolveUploadFolder } from "@/lib/uploadFolders";
 
 export const config = {
@@ -15,7 +16,7 @@ function parseUpload(req: NextApiRequest) {
   const form = formidable({
     multiples: false,
     maxFiles: 1,
-    maxFileSize: 25 * 1024 * 1024,
+    maxFileSize: MAX_SIMPLE_UPLOAD_BYTES,
   });
 
   return new Promise<{ file: formidable.File; folder: string }>((resolve, reject) => {
@@ -73,7 +74,11 @@ export default async function handler(
     );
 
     const accessToken = await getOneDriveAccessToken();
-    const result = await uploadToOneDrive(uploadFile, accessToken, folder);
+    const result = await uploadSmallFileToOneDrive(
+      uploadFile,
+      accessToken,
+      folder,
+    );
 
     return res.status(200).json(result);
   } catch (error) {
