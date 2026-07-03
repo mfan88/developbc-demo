@@ -20,7 +20,8 @@ type AdminAccessPayload = {
 type AccessPayload = PortalAccessPayload | AdminAccessPayload;
 
 function getUploadAccessSecret() {
-  const secret = process.env.UPLOAD_ACCESS_SECRET;
+  const secret =
+    process.env.UPLOAD_ACCESS_SECRET ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   if (secret) return secret;
 
   if (process.env.NODE_ENV === "production") {

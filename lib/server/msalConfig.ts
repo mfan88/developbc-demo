@@ -19,9 +19,33 @@ export function getAppOrigin() {
   const configured =
     process.env.NEXT_PUBLIC_APP_URL ??
     process.env.APP_URL ??
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : null) ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
 
   return (configured ?? "http://localhost:3000").replace(/\/$/, "");
+}
+
+export function getPublicSiteOrigin(req?: {
+  headers: {
+    host?: string;
+    "x-forwarded-proto"?: string | string[];
+  };
+}) {
+  if (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL) {
+    return getAppOrigin();
+  }
+
+  if (req?.headers.host && !req.headers.host.includes("localhost")) {
+    const protocol =
+      typeof req.headers["x-forwarded-proto"] === "string"
+        ? req.headers["x-forwarded-proto"].split(",")[0]?.trim()
+        : "https";
+    return `${protocol}://${req.headers.host}`.replace(/\/$/, "");
+  }
+
+  return getAppOrigin();
 }
 
 function resolveRedirectUri(path: string, req?: {

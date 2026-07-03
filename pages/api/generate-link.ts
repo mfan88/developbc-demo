@@ -1,7 +1,7 @@
 import { Redis } from "@upstash/redis";
 import { randomUUID } from "node:crypto";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getAppOrigin } from "@/lib/server/msalConfig";
+import { getPublicSiteOrigin } from "@/lib/server/msalConfig";
 
 const redis = Redis.fromEnv();
 
@@ -17,7 +17,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const token = randomUUID();
     await redis.set(`link:${token}`, "unused", { ex: LINK_TTL_SECONDS });
 
-    const url = `${getAppOrigin()}/portalaccess/${token}`;
+    const url = `${getPublicSiteOrigin(req)}/portalaccess/${token}`;
     return res.status(200).json({ url, expiresInSeconds: LINK_TTL_SECONDS });
   } catch (error) {
     const message =
