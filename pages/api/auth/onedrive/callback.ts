@@ -39,7 +39,7 @@ export default async function handler(
   }
 
   try {
-    await completeOneDriveLogin(code, codeVerifier);
+    await completeOneDriveLogin(code, codeVerifier, req);
     clearPkceCookie(res);
     res.redirect(307, "/setup?connected=1");
   } catch (err) {

@@ -15,7 +15,7 @@ export default async function handler(
   try {
     const { verifier, challenge } = createPkcePair();
     setPkceCookie(res, verifier);
-    const loginUrl = await getOneDriveLoginUrl(challenge);
+    const loginUrl = await getOneDriveLoginUrl(challenge, req);
     res.redirect(307, loginUrl);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Login failed";

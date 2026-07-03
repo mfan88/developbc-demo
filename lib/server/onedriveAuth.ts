@@ -82,11 +82,19 @@ export async function getOneDriveConnectionStatus() {
   };
 }
 
-export async function getOneDriveLoginUrl(codeChallenge: string) {
+export async function getOneDriveLoginUrl(
+  codeChallenge: string,
+  req?: {
+    headers: {
+      host?: string;
+      "x-forwarded-proto"?: string | string[];
+    };
+  },
+) {
   const client = getOneDriveClient();
   const request: AuthorizationUrlRequest = {
     scopes: [...graphScopes],
-    redirectUri: getOneDriveRedirectUri(),
+    redirectUri: getOneDriveRedirectUri(req),
     prompt: "select_account",
     codeChallenge,
     codeChallengeMethod: "S256",
@@ -94,13 +102,22 @@ export async function getOneDriveLoginUrl(codeChallenge: string) {
   return client.getAuthCodeUrl(request);
 }
 
-export async function completeOneDriveLogin(code: string, codeVerifier: string) {
+export async function completeOneDriveLogin(
+  code: string,
+  codeVerifier: string,
+  req?: {
+    headers: {
+      host?: string;
+      "x-forwarded-proto"?: string | string[];
+    };
+  },
+) {
   const client = getOneDriveClient();
   const request: AuthorizationCodeRequest = {
     code,
     codeVerifier,
     scopes: [...graphScopes],
-    redirectUri: getOneDriveRedirectUri(),
+    redirectUri: getOneDriveRedirectUri(req),
   };
   return client.acquireTokenByCode(request);
 }

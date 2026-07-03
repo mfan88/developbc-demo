@@ -13,7 +13,7 @@ export default async function handler(
     const status = await getOneDriveConnectionStatus();
     return res.status(200).json({
       ...status,
-      redirectUri: getOneDriveRedirectUri(),
+      redirectUri: getOneDriveRedirectUri(req),
     });
   }
 
