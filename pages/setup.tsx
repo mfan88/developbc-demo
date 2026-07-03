@@ -11,6 +11,7 @@ type ConnectionStatus = {
   connected: boolean;
   username: string | null;
   redirectUri?: string;
+  tokenStorage?: string;
 };
 
 export default function SetupPage() {
@@ -83,6 +84,7 @@ export default function SetupPage() {
             {status.connected
               ? `Connected as ${status.username}`
               : "Not connected"}
+            {status.tokenStorage ? ` · Token storage: ${status.tokenStorage}` : null}
           </p>
         )}
 
@@ -105,6 +107,24 @@ export default function SetupPage() {
           >
             {isDisconnecting ? "Disconnecting..." : "Disconnect"}
           </Button>
+        </div>
+
+        <div className="rounded-md border p-4 text-sm">
+          <p className="font-medium">Vercel production</p>
+          <p className="mt-2">
+            Vercel cannot write to the project filesystem. Before connecting on
+            production, create a{" "}
+            <a
+              href="https://vercel.com/docs/vercel-blob"
+              className="underline"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Vercel Blob
+            </a>{" "}
+            store for this project (Storage tab → Create → Blob), then redeploy.
+            Vercel injects <code>BLOB_READ_WRITE_TOKEN</code> automatically.
+          </p>
         </div>
 
         <div className="rounded-md border p-4 text-sm">

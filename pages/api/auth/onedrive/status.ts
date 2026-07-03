@@ -4,6 +4,7 @@ import {
   clearOneDriveConnection,
   getOneDriveConnectionStatus,
 } from "@/lib/server/onedriveAuth";
+import { getTokenStorageDescription } from "@/lib/server/onedriveTokenStore";
 
 export default async function handler(
   req: NextApiRequest,
@@ -14,6 +15,7 @@ export default async function handler(
     return res.status(200).json({
       ...status,
       redirectUri: getOneDriveRedirectUri(req),
+      tokenStorage: getTokenStorageDescription(),
     });
   }
 

@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import {
   type AccountInfo,
   type AuthorizationCodeRequest,
@@ -13,9 +11,13 @@ import {
   graphScopes,
   msalAuthority,
   msalClientId,
-  ONEDRIVE_CACHE_PATH,
   uploadScopes,
 } from "@/lib/server/msalConfig";
+import {
+  deleteTokenCache,
+  readTokenCache,
+  writeTokenCache,
+} from "@/lib/server/onedriveTokenStore";
 
 let pca: PublicClientApplication | null = null;
 
@@ -30,20 +32,14 @@ function ensureClientId() {
 function createCachePlugin(): ICachePlugin {
   return {
     beforeCacheAccess: async (cacheContext) => {
-      if (!fs.existsSync(ONEDRIVE_CACHE_PATH)) return;
-      const serialized = fs.readFileSync(ONEDRIVE_CACHE_PATH, "utf8");
+      const serialized = await readTokenCache();
       if (serialized) {
         cacheContext.tokenCache.deserialize(serialized);
       }
     },
     afterCacheAccess: async (cacheContext) => {
       if (!cacheContext.cacheHasChanged) return;
-      fs.mkdirSync(path.dirname(ONEDRIVE_CACHE_PATH), { recursive: true });
-      fs.writeFileSync(
-        ONEDRIVE_CACHE_PATH,
-        cacheContext.tokenCache.serialize(),
-        "utf8",
-      );
+      await writeTokenCache(cacheContext.tokenCache.serialize());
     },
   };
 }
@@ -151,8 +147,6 @@ export async function getOneDriveAccessToken() {
 }
 
 export async function clearOneDriveConnection() {
-  if (fs.existsSync(ONEDRIVE_CACHE_PATH)) {
-    fs.unlinkSync(ONEDRIVE_CACHE_PATH);
-  }
+  await deleteTokenCache();
   pca = null;
 }
