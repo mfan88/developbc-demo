@@ -1,10 +1,12 @@
 import fs from "node:fs";
 import formidable from "formidable";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { uploadSmallFileToOneDrive } from "@/lib/graphUpload";
+import {
+  uploadSmallFileToOneDrive,
+  MAX_SIMPLE_UPLOAD_BYTES,
+} from "@/lib/graphUpload";
 import { getOneDriveAccessToken } from "@/lib/server/onedriveAuth";
 import { assertUploadPortalAccess } from "@/lib/server/uploadAccess";
-import { MAX_SIMPLE_UPLOAD_BYTES } from "@/lib/uploadLimits";
 
 export const config = {
   api: {

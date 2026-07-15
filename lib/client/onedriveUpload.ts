@@ -3,10 +3,7 @@ import {
   type OneDriveUploadSession,
 } from "@/lib/graphUpload";
 import { renameFileForUpload } from "@/lib/uploadNaming";
-import {
-  MAX_SIMPLE_UPLOAD_BYTES,
-  UPLOAD_CHUNK_BYTES,
-} from "@/lib/uploadLimits";
+import { MAX_SIMPLE_UPLOAD_BYTES, UPLOAD_CHUNK_BYTES } from "@/lib/graphUpload";
 
 type UploadSessionResponse = OneDriveUploadSession;
 

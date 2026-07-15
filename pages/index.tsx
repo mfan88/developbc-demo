@@ -1,12 +1,3 @@
-//TODO: 2 week link
-//TODO: Calendar picker for date
-//TODO: NAME SCHEME : GMA Video 12(FIRST) 12(LAST) DATE TAKEN_AGE
-/*
-GMA Videos
--> VIDEO: GMA Video FIRST LAST DateTaken_age folder
-
-*/
-
 import ddaLogo from "@/assets/dda-logo.svg";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
@@ -18,14 +9,17 @@ import { canAccessUploadPortal } from "@/lib/server/uploadAccess";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CalendarIcon, CheckCircle2Icon } from "lucide-react";
-import { type OneDriveUploadResult } from "@/lib/graphUpload";
+import {
+  UPLOAD_FOLDER_NAME,
+  type OneDriveUploadResult,
+} from "@/lib/graphUpload";
 import { uploadFileToOneDrive } from "@/lib/client/onedriveUpload";
 import { useLiveUploadPercent } from "@/lib/client/useLiveUploadPercent";
 import {
   ACCEPTED_UPLOAD_TYPES,
   formatMaxUploadSize,
   MAX_UPLOAD_BYTES,
-} from "@/lib/uploadLimits";
+} from "@/lib/graphUpload";
 import {
   Card,
   CardContent,
@@ -33,10 +27,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { UPLOAD_FOLDER_NAME } from "@/lib/uploadFolders";
 import { buildUploadFilename } from "@/lib/uploadNaming";
 import { Progress } from "@/components/ui/progress";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -125,8 +122,10 @@ export default function Home() {
 
       <div className="flex flex-col items-center gap-8 mt-5">
         <div className="flex w-full justify-center items-center">
-          <h1 className={`text-6xl text-black ${montTitle.className}`}>
-            PARENT UPLOAD PORTAL
+          <h1
+            className={`text-6xl text-black text-center ${montTitle.className}`}
+          >
+            General Movements Assessment (GMA) Video Portal
           </h1>
         </div>
         <div
@@ -187,7 +186,9 @@ export default function Home() {
             </AlertDescription>
           </Alert>
         )}
-        <span className="text-sm text-black">Please select the date the video was taken</span>
+        <span className="text-sm text-black">
+          Please select the date the video was taken
+        </span>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -204,7 +205,6 @@ export default function Home() {
             <Calendar mode="single" selected={date} onSelect={setDate} />
           </PopoverContent>
         </Popover>
-
 
         <Button
           variant="ghost"

@@ -1,5 +1,17 @@
-import { MAX_SIMPLE_UPLOAD_BYTES, MAX_UPLOAD_BYTES } from "@/lib/uploadLimits";
-import { getUploadFolder } from "@/lib/uploadFolders";
+export const UPLOAD_FOLDER_NAME = "GMA Videos";
+
+export const MAX_UPLOAD_BYTES = 4000 * 1024 * 1024;
+export const MAX_SIMPLE_UPLOAD_BYTES = 4 * 1024 * 1024;
+export const UPLOAD_CHUNK_BYTES = 10 * 1024 * 1024;
+
+export const ACCEPTED_UPLOAD_TYPES = {
+  "image/*": [],
+  "video/*": [],
+} as const;
+
+export function formatMaxUploadSize() {
+  return "4 GB";
+}
 
 export type OneDriveUploadResult = {
   id: string;
@@ -18,7 +30,7 @@ function encodeDrivePath(path: string) {
 }
 
 export function buildDriveItemPath(filename: string) {
-  return `${getUploadFolder()}/${filename}`;
+  return `${UPLOAD_FOLDER_NAME}/${filename}`;
 }
 
 export function sanitizeUploadFilename(filename: string) {
@@ -119,12 +131,4 @@ export async function createOneDriveUploadSession(
   }
 
   return session;
-}
-
-/** @deprecated Use uploadSmallFileToOneDrive instead. */
-export async function uploadToOneDrive(
-  file: File,
-  accessToken: string,
-): Promise<OneDriveUploadResult> {
-  return uploadSmallFileToOneDrive(file, accessToken);
 }
