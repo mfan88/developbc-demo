@@ -1,7 +1,5 @@
-import {
-  MAX_SIMPLE_UPLOAD_BYTES,
-  MAX_UPLOAD_BYTES,
-} from "@/lib/uploadLimits";
+import { MAX_SIMPLE_UPLOAD_BYTES, MAX_UPLOAD_BYTES } from "@/lib/uploadLimits";
+import { getUploadFolder } from "@/lib/uploadFolders";
 
 export type OneDriveUploadResult = {
   id: string;
@@ -19,8 +17,8 @@ function encodeDrivePath(path: string) {
   return path.split("/").map(encodeURIComponent).join("/");
 }
 
-export function buildDriveItemPath(folder: string, filename: string) {
-  return `${folder}/${filename}`;
+export function buildDriveItemPath(filename: string) {
+  return `${getUploadFolder()}/${filename}`;
 }
 
 export function sanitizeUploadFilename(filename: string) {
@@ -36,7 +34,9 @@ export function assertValidUploadSize(fileSize: number) {
     throw new Error("File size is required.");
   }
   if (fileSize > MAX_UPLOAD_BYTES) {
-    throw new Error(`Files must be ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB or smaller.`);
+    throw new Error(
+      `Files must be ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB or smaller.`,
+    );
   }
 }
 
@@ -55,13 +55,12 @@ async function parseGraphError(res: Response) {
 export async function uploadSmallFileToOneDrive(
   file: File,
   accessToken: string,
-  folder: string,
 ): Promise<OneDriveUploadResult> {
   if (file.size > MAX_SIMPLE_UPLOAD_BYTES) {
     throw new Error("Use a resumable upload session for files over 4 MB.");
   }
 
-  const path = buildDriveItemPath(folder, file.name);
+  const path = buildDriveItemPath(file.name);
   const encodedPath = encodeDrivePath(path);
   const res = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/root:/${encodedPath}:/content`,
@@ -89,10 +88,9 @@ export async function uploadSmallFileToOneDrive(
 
 export async function createOneDriveUploadSession(
   accessToken: string,
-  folder: string,
   filename: string,
 ): Promise<OneDriveUploadSession> {
-  const path = buildDriveItemPath(folder, filename);
+  const path = buildDriveItemPath(filename);
   const encodedPath = encodeDrivePath(path);
   const res = await fetch(
     `https://graph.microsoft.com/v1.0/me/drive/root:/${encodedPath}:/createUploadSession`,
@@ -127,7 +125,6 @@ export async function createOneDriveUploadSession(
 export async function uploadToOneDrive(
   file: File,
   accessToken: string,
-  folder: string,
 ): Promise<OneDriveUploadResult> {
-  return uploadSmallFileToOneDrive(file, accessToken, folder);
+  return uploadSmallFileToOneDrive(file, accessToken);
 }

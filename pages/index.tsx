@@ -1,3 +1,12 @@
+//TODO: 2 week link
+//TODO: Calendar picker for date
+//TODO: NAME SCHEME : GMA Video 12(FIRST) 12(LAST) DATE TAKEN_AGE
+/*
+GMA Videos
+-> VIDEO: GMA Video FIRST LAST DateTaken_age folder
+
+*/
+
 import ddaLogo from "@/assets/dda-logo.svg";
 import Image from "next/image";
 import { Montserrat } from "next/font/google";
@@ -6,16 +15,9 @@ import type { GetServerSideProps } from "next";
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { canAccessUploadPortal } from "@/lib/server/uploadAccess";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { CheckCircle2Icon } from "lucide-react";
+import { CalendarIcon, CheckCircle2Icon } from "lucide-react";
 import { type OneDriveUploadResult } from "@/lib/graphUpload";
 import { uploadFileToOneDrive } from "@/lib/client/onedriveUpload";
 import { useLiveUploadPercent } from "@/lib/client/useLiveUploadPercent";
@@ -31,9 +33,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { toast } from "sonner";
-import { PHYSIO_OPTIONS } from "@/lib/uploadFolders";
+import { UPLOAD_FOLDER_NAME } from "@/lib/uploadFolders";
+import { buildUploadFilename } from "@/lib/uploadNaming";
 import { Progress } from "@/components/ui/progress";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 
 const montTitle = Montserrat({
   weight: "600",
@@ -62,24 +67,21 @@ export default function Home() {
   const [files, setFiles] = useState<{ file: File; previewUrl: string } | null>(
     null,
   );
-  const [selectedPhysio, setSelectedPhysio] = useState<string | undefined>(
-    undefined,
-  );
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadResult, setUploadResult] = useState<OneDriveUploadResult | null>(
     null,
   );
   const [isUploading, setIsUploading] = useState(false);
+  const [date, setDate] = useState<Date>();
   const uploadPercent = useLiveUploadPercent();
 
-  const runUpload = useCallback(async (file: File, folder: string) => {
+  const runUpload = useCallback(async (file: File, date: Date) => {
     setUploadError(null);
     setUploadResult(null);
     setIsUploading(true);
-    if (!folder) return;
 
     try {
-      const result = await uploadFileToOneDrive(file, folder);
+      const result = await uploadFileToOneDrive(file, date);
       setUploadResult(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed";
@@ -127,27 +129,15 @@ export default function Home() {
             PARENT UPLOAD PORTAL
           </h1>
         </div>
-        <div>
-          <Select value={selectedPhysio} onValueChange={setSelectedPhysio}>
-            <SelectTrigger className="w-60 max-w-60 text-black">
-              <SelectValue placeholder="Select your physio"></SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {PHYSIO_OPTIONS.map((physio) => (
-                <SelectItem key={physio.value} value={physio.value}>
-                  {physio.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
         <div
           {...getRootProps()}
           className={`w-120 min-w-30 max-w-120 h-60 min-h-15 max-h-60 flex flex-col text-black ${mont.className} justify-center items-center border border-dashed border-black rounded-md ${isDragActive ? "dragging" : ""}`}
         >
           <input {...getInputProps()} />
           <p className={`text-xl`}>Drag & drop photos or videos here!</p>
-          <p className={`text-sm`}>or click to select files (up to {formatMaxUploadSize()})</p>
+          <p className={`text-sm`}>
+            or click to select files (up to {formatMaxUploadSize()})
+          </p>
         </div>
 
         {files?.file && (
@@ -158,19 +148,17 @@ export default function Home() {
             <CardContent>
               <CardTitle className="m-0">
                 {uploadResult
-                  ? `File Uploaded \nSending to Physio: ${selectedPhysio}`
+                  ? `File uploaded to ${UPLOAD_FOLDER_NAME}`
                   : "File Selected"}
               </CardTitle>
               <CardDescription className="m-0">
-                {files.file.name}
+                {date
+                  ? buildUploadFilename(files.file.name, date)
+                  : files.file.name}
               </CardDescription>
             </CardContent>
           </Card>
         )}
-
-        <p className={`text-sm text-black ${mont.className}`}>
-          No sign-in needed. Files are sent to the clinic OneDrive account.
-        </p>
 
         {isUploading && (
           <Progress
@@ -199,18 +187,34 @@ export default function Home() {
             </AlertDescription>
           </Alert>
         )}
+        <span className="text-sm text-black">Please select the date the video was taken</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="lg"
+              type="button"
+              className="justify-start text-left font-normal text-black"
+            >
+              <CalendarIcon className="text-black" />
+              {date ? format(date, "PPP") : "Pick a date"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0">
+            <Calendar mode="single" selected={date} onSelect={setDate} />
+          </PopoverContent>
+        </Popover>
+
 
         <Button
           variant="ghost"
           className={`border border-black text-black hover:text-black text-xl ${mont.className}`}
           size="lg"
-          disabled={!files?.file || !selectedPhysio || isUploading}
+          disabled={!files?.file || !date || isUploading}
           onClick={() => {
-            if (!files?.file || !selectedPhysio) {
-              toast.error("Select your physio before uploading.");
-              return;
-            }
-            void runUpload(files.file, selectedPhysio);
+            if (!files?.file) return;
+            if (!date) return;
+            void runUpload(files.file, date);
           }}
         >
           {isUploading ? "Uploading..." : "Send"}

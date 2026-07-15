@@ -10,10 +10,12 @@ export const msalAuthority =
 export const graphScopes = [
   "User.Read",
   "Files.ReadWrite",
+  "Mail.Send",
   "offline_access",
 ] as const;
 
 export const uploadScopes = ["Files.ReadWrite"] as const;
+export const mailScopes = ["Mail.Send"] as const;
 
 export function getAppOrigin() {
   const configured =

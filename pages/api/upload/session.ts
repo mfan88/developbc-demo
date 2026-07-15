@@ -6,7 +6,6 @@ import {
 } from "@/lib/graphUpload";
 import { getOneDriveAccessToken } from "@/lib/server/onedriveAuth";
 import { assertUploadPortalAccess } from "@/lib/server/uploadAccess";
-import { resolveUploadFolder } from "@/lib/uploadFolders";
 
 export default async function handler(
   req: NextApiRequest,
@@ -24,16 +23,8 @@ export default async function handler(
   try {
     const body = req.body as {
       filename?: string;
-      folder?: string;
       fileSize?: number;
     };
-
-    const folderKey = body.folder;
-    const folder =
-      typeof folderKey === "string" ? resolveUploadFolder(folderKey) : null;
-    if (!folder) {
-      return res.status(400).json({ error: "A valid physio folder is required" });
-    }
 
     if (typeof body.filename !== "string") {
       return res.status(400).json({ error: "Filename is required" });
@@ -43,11 +34,7 @@ export default async function handler(
     assertValidUploadSize(Number(body.fileSize));
 
     const accessToken = await getOneDriveAccessToken();
-    const session = await createOneDriveUploadSession(
-      accessToken,
-      folder,
-      filename,
-    );
+    const session = await createOneDriveUploadSession(accessToken, filename);
 
     return res.status(200).json(session);
   } catch (error) {

@@ -3,8 +3,8 @@ import type { NextApiRequest } from "next";
 import { getOneDriveConnectionStatus } from "@/lib/server/onedriveAuth";
 
 export const UPLOAD_ACCESS_COOKIE = "upload_access";
-export const PORTAL_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 24;
-export const ADMIN_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 12;
+export const PORTAL_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
+export const ADMIN_ACCESS_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
 
 type PortalAccessPayload = {
   type: "portal";
@@ -43,7 +43,9 @@ function signPayload(payload: AccessPayload) {
   return `${data}.${signature}`;
 }
 
-function readAccessPayload(cookieHeader: string | undefined): AccessPayload | null {
+function readAccessPayload(
+  cookieHeader: string | undefined,
+): AccessPayload | null {
   if (!cookieHeader) return null;
 
   for (const part of cookieHeader.split(";")) {
@@ -101,10 +103,7 @@ export function createPortalAccessCookieHeader() {
     exp: Math.floor(Date.now() / 1000) + PORTAL_ACCESS_MAX_AGE_SECONDS,
   };
 
-  return buildCookieHeader(
-    signPayload(payload),
-    PORTAL_ACCESS_MAX_AGE_SECONDS,
-  );
+  return buildCookieHeader(signPayload(payload), PORTAL_ACCESS_MAX_AGE_SECONDS);
 }
 
 export function createAdminAccessCookieHeader(username: string) {
@@ -153,7 +152,8 @@ export async function assertUploadPortalAccess(
   if (access.allowed) return true;
 
   res.status(401).json({
-    error: "Upload access required. Use a parent link or sign in with the receiving OneDrive account.",
+    error:
+      "Upload access required. Use a parent link or sign in with the receiving OneDrive account.",
   });
   return false;
 }

@@ -5,7 +5,6 @@ import { uploadSmallFileToOneDrive } from "@/lib/graphUpload";
 import { getOneDriveAccessToken } from "@/lib/server/onedriveAuth";
 import { assertUploadPortalAccess } from "@/lib/server/uploadAccess";
 import { MAX_SIMPLE_UPLOAD_BYTES } from "@/lib/uploadLimits";
-import { resolveUploadFolder } from "@/lib/uploadFolders";
 
 export const config = {
   api: {
@@ -20,8 +19,8 @@ function parseUpload(req: NextApiRequest) {
     maxFileSize: MAX_SIMPLE_UPLOAD_BYTES,
   });
 
-  return new Promise<{ file: formidable.File; folder: string }>((resolve, reject) => {
-    form.parse(req, (error, fields, files) => {
+  return new Promise<{ file: formidable.File }>((resolve, reject) => {
+    form.parse(req, (error, _fields, files) => {
       if (error) {
         reject(error);
         return;
@@ -34,18 +33,7 @@ function parseUpload(req: NextApiRequest) {
         return;
       }
 
-      const folderField = fields.folder;
-      const folderKey = Array.isArray(folderField)
-        ? folderField[0]
-        : folderField;
-      const folder =
-        typeof folderKey === "string" ? resolveUploadFolder(folderKey) : null;
-      if (!folder) {
-        reject(new Error("A valid physio folder is required"));
-        return;
-      }
-
-      resolve({ file, folder });
+      resolve({ file });
     });
   });
 }
@@ -66,7 +54,7 @@ export default async function handler(
   let tempFilePath: string | null = null;
 
   try {
-    const { file, folder } = await parseUpload(req);
+    const { file } = await parseUpload(req);
     tempFilePath = file.filepath;
 
     const buffer = fs.readFileSync(file.filepath);
@@ -79,11 +67,7 @@ export default async function handler(
     );
 
     const accessToken = await getOneDriveAccessToken();
-    const result = await uploadSmallFileToOneDrive(
-      uploadFile,
-      accessToken,
-      folder,
-    );
+    const result = await uploadSmallFileToOneDrive(uploadFile, accessToken);
 
     return res.status(200).json(result);
   } catch (error) {

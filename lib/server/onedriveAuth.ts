@@ -10,6 +10,7 @@ import {
   getOneDriveRedirectUri,
   getUploadAccessRedirectUri,
   graphScopes,
+  mailScopes,
   msalAuthority,
   msalClientId,
   uploadScopes,
@@ -150,6 +151,14 @@ export async function completeOneDriveLogin(
 }
 
 export async function getOneDriveAccessToken() {
+  return getGraphAccessToken([...uploadScopes]);
+}
+
+export async function getMailAccessToken() {
+  return getGraphAccessToken([...mailScopes]);
+}
+
+async function getGraphAccessToken(scopes: string[]) {
   const client = getOneDriveClient();
   const account = await getConnectedOneDriveAccount();
   if (!account) {
@@ -160,19 +169,19 @@ export async function getOneDriveAccessToken() {
 
   const request: SilentFlowRequest = {
     account,
-    scopes: [...uploadScopes],
+    scopes,
     forceRefresh: false,
   };
 
   try {
     const result = await client.acquireTokenSilent(request);
     if (!result?.accessToken) {
-      throw new Error("Could not acquire OneDrive access token.");
+      throw new Error("Could not acquire Microsoft Graph access token.");
     }
     return result.accessToken;
   } catch {
     throw new Error(
-      "OneDrive session expired. Visit /setup and connect the receiving account again.",
+      "Microsoft session expired or missing Mail.Send consent. Visit /setup and connect the receiving account again.",
     );
   }
 }
